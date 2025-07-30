@@ -295,6 +295,7 @@
       this.iframe = document.createElement('iframe');
       this.iframe.src = this.getIframeUrl();
       this.iframe.allow = 'microphone';
+      this.iframe.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups allow-modals';
       
       // Add loading state
       const loader = document.createElement('div');

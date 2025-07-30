@@ -4,16 +4,16 @@ const nextConfig = {
   async headers() {
     return [
       {
-        // Apply CORS headers to widget routes
+        // Apply headers to widget routes - ALLOW ALL ORIGINS FOR IFRAME
         source: '/widget/:path*',
         headers: [
           {
             key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
+            value: 'ALLOWALL', // Allow embedding from any domain
           },
           {
             key: 'Content-Security-Policy',
-            value: "frame-ancestors 'self' *",
+            value: "frame-ancestors *", // Allow all domains to embed
           },
         ],
       },
