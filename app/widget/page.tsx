@@ -11,6 +11,7 @@ import ProfessionalChatInput from '@/components/ProfessionalChatInput'
 import TypingIndicator from '@/components/TypingIndicator'
 import WidgetHeader from '@/components/WidgetHeader'
 import ChatHistory from '@/components/ChatHistory'
+import Head from 'next/head'
 
 interface WidgetConfig {
   theme?: {
@@ -43,16 +44,28 @@ function WidgetContent() {
     if (typeof window !== 'undefined') {
       const removeFrameRestrictions = () => {
         // Remove any existing X-Frame-Options restrictions
+        const existingMeta = document.querySelector('meta[http-equiv="X-Frame-Options"]');
+        if (existingMeta) {
+          existingMeta.remove();
+        }
+        
         const meta = document.createElement('meta');
         meta.httpEquiv = 'X-Frame-Options';
         meta.content = 'ALLOWALL';
         document.head.appendChild(meta);
         
         // Also add CSP meta for frame-ancestors
+        const existingCSP = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+        if (existingCSP) {
+          existingCSP.remove();
+        }
+        
         const cspMeta = document.createElement('meta');
         cspMeta.httpEquiv = 'Content-Security-Policy';
-        cspMeta.content = 'frame-ancestors *';
+        cspMeta.content = 'frame-ancestors *; default-src * data: blob:; script-src * data: blob: \'unsafe-inline\' \'unsafe-eval\'; style-src * data: blob: \'unsafe-inline\';';
         document.head.appendChild(cspMeta);
+        
+        console.log('Added iframe embedding support with meta tags');
       };
 
       if (document.readyState === 'loading') {
@@ -305,87 +318,59 @@ function WidgetContent() {
     }
   }
 
-  // Minimized state for widget (when not in iframe)
-  if (isMinimized && window.parent === window) {
-    return (
-      <div className="fixed bottom-4 right-4 z-50">
-        <motion.button
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          whileHover={{ scale: 1.05, y: -2 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setIsMinimized(false)}
-          className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 text-white px-5 py-3 rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 flex items-center gap-3 group border border-white border-opacity-20"
-        >
-          <div className="relative">
-            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center border-2 border-gray-200">
-              <span className="font-bold text-gray-800 text-sm">PS</span>
-            </div>
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white shadow-lg animate-pulse" />
-          </div>
-          
-          <div className="flex flex-col items-start">
-            <span className="font-bold text-white text-sm">
-              {config.theme?.companyName || 'PlayStation Support'}
-            </span>
-            <span className="text-xs text-white text-opacity-80 group-hover:text-opacity-100 transition-opacity">
-              Click to continue chat
-            </span>
-          </div>
-          
-          <div className="w-2 h-2 bg-white bg-opacity-50 rounded-full group-hover:bg-opacity-100 transition-all duration-300" />
-        </motion.button>
-      </div>
-    )
-  }
-
   return (
-    <div className="w-full h-screen bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden">
-      <AnimatePresence mode="wait">
-        {showHistory ? (
-          <ChatHistory
-            key="history"
-            sessions={chatSessions}
-            currentSessionId={currentSessionId}
-            onSelectSession={selectSession}
-            onDeleteSession={deleteSession}
-            onNewChat={createNewChat}
-            onBack={() => setShowHistory(false)}
-          />
-        ) : (
-          <div key="chat" className="flex flex-col h-full">
-            <WidgetHeader 
-              onMinimize={handleMinimize}
-              onClose={handleClose}
+    <>
+      <Head>
+        <meta httpEquiv="X-Frame-Options" content="ALLOWALL" />
+        <meta httpEquiv="Content-Security-Policy" content="frame-ancestors *" />
+      </Head>
+      <div className="w-full h-screen bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden">
+        <AnimatePresence mode="wait">
+          {showHistory ? (
+            <ChatHistory
+              key="history"
+              sessions={chatSessions}
+              currentSessionId={currentSessionId}
+              onSelectSession={selectSession}
+              onDeleteSession={deleteSession}
               onNewChat={createNewChat}
-              onShowHistory={() => setShowHistory(true)}
-              companyName={config.theme?.companyName || "PlayStation Support"}
-              isOnline={true}
-              currentChatTitle={currentSession?.title}
+              onBack={() => setShowHistory(false)}
             />
-            
-            <div className="flex-1 overflow-y-auto p-4 bg-gradient-to-b from-blue-50 via-purple-50 to-pink-50">
-              <AnimatePresence>
-                {messages.map((message) => (
-                  <EnhancedMessage 
-                    key={message.id} 
-                    message={message} 
-                    onFeedback={handleFeedback}
-                  />
-                ))}
-                {isLoading && <TypingIndicator />}
-              </AnimatePresence>
+          ) : (
+            <div key="chat" className="flex flex-col h-full">
+              <WidgetHeader 
+                onMinimize={handleMinimize}
+                onClose={handleClose}
+                onNewChat={createNewChat}
+                onShowHistory={() => setShowHistory(true)}
+                companyName={config.theme?.companyName || "PlayStation Support"}
+                isOnline={true}
+                currentChatTitle={currentSession?.title}
+              />
+              
+              <div className="flex-1 overflow-y-auto p-4 bg-gradient-to-b from-blue-50 via-purple-50 to-pink-50">
+                <AnimatePresence>
+                  {messages.map((message) => (
+                    <EnhancedMessage 
+                      key={message.id} 
+                      message={message} 
+                      onFeedback={handleFeedback}
+                    />
+                  ))}
+                  {isLoading && <TypingIndicator />}
+                </AnimatePresence>
+              </div>
+              
+              <ProfessionalChatInput 
+                onSendMessage={sendMessage} 
+                isLoading={isLoading} 
+                hasMessages={hasUserMessages}
+              />
             </div>
-            
-            <ProfessionalChatInput 
-              onSendMessage={sendMessage} 
-              isLoading={isLoading} 
-              hasMessages={hasUserMessages}
-            />
-          </div>
-        )}
-      </AnimatePresence>
-    </div>
+          )}
+        </AnimatePresence>
+      </div>
+    </>
   )
 }
 
