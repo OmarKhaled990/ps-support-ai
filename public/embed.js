@@ -20,7 +20,7 @@
     size: 'medium',
     welcomeMessage: '🎮 Welcome to PlayStation Support! How can I help you today?',
     placeholder: 'Ask about your PlayStation issue...',
-    hostUrl: 'https://your-domain.com', // Replace with your actual domain
+    hostUrl: 'https://ps-support-4w537ek5p-omar-khalafs-projects.vercel.app',
     enableAnalytics: true,
     zIndex: 9999
   };
@@ -32,6 +32,7 @@
       this.isLoaded = false;
       this.iframe = null;
       this.container = null;
+      this.isMinimized = true; // Start minimized as a bubble
       
       this.init();
     }
@@ -49,16 +50,224 @@
     }
     
     createWidget() {
+      // Create floating bubble first
+      this.createBubble();
+    }
+    
+    createBubble() {
+      // Create bubble container
+      this.bubbleContainer = document.createElement('div');
+      this.bubbleContainer.id = 'playstation-chat-bubble';
+      this.bubbleContainer.style.cssText = this.getBubbleStyles();
+      
+      // Bubble content
+      this.bubbleContainer.innerHTML = `
+        <div class="bubble-icon">
+          <div class="ps-logo">PS</div>
+          <div class="notification-dot"></div>
+        </div>
+        <div class="bubble-text">
+          <div class="bubble-title">PlayStation Support</div>
+          <div class="bubble-subtitle">Need help? Click to chat!</div>
+        </div>
+      `;
+      
+      // Add click handler to open chat
+      this.bubbleContainer.addEventListener('click', () => this.openChat());
+      
+      document.body.appendChild(this.bubbleContainer);
+      
+      // Add bubble styles
+      this.addBubbleStyles();
+      
+      // Animate bubble in
+      setTimeout(() => {
+        this.bubbleContainer.style.transform = 'translateY(0) scale(1)';
+        this.bubbleContainer.style.opacity = '1';
+      }, 500);
+    }
+    
+    getBubbleStyles() {
+      const position = this.config.position || 'bottom-right';
+      
+      const positions = {
+        'bottom-right': 'bottom: 20px; right: 20px;',
+        'bottom-left': 'bottom: 20px; left: 20px;',
+        'top-right': 'top: 20px; right: 20px;',
+        'top-left': 'top: 20px; left: 20px;'
+      };
+      
+      return `
+        position: fixed;
+        ${positions[position]}
+        width: 280px;
+        height: 80px;
+        background: linear-gradient(135deg, #0066cc 0%, #004499 100%);
+        border-radius: 40px;
+        box-shadow: 0 8px 32px rgba(0, 102, 204, 0.3);
+        cursor: pointer;
+        z-index: ${this.config.zIndex};
+        display: flex;
+        align-items: center;
+        padding: 0 20px;
+        gap: 15px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateY(100px) scale(0.8);
+        opacity: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      `;
+    }
+    
+    addBubbleStyles() {
+      if (document.getElementById('ps-bubble-styles')) return;
+      
+      const style = document.createElement('style');
+      style.id = 'ps-bubble-styles';
+      style.textContent = `
+        #playstation-chat-bubble:hover {
+          transform: translateY(-5px) scale(1.02) !important;
+          box-shadow: 0 12px 40px rgba(0, 102, 204, 0.4) !important;
+        }
+        
+        .bubble-icon {
+          position: relative;
+          flex-shrink: 0;
+        }
+        
+        .ps-logo {
+          width: 50px;
+          height: 50px;
+          background: white;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 800;
+          font-size: 16px;
+          color: #0066cc;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .notification-dot {
+          position: absolute;
+          top: -2px;
+          right: -2px;
+          width: 16px;
+          height: 16px;
+          background: #ff6b35;
+          border-radius: 50%;
+          border: 3px solid white;
+          animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+          0% { transform: scale(1); opacity: 1; }
+          50% { transform: scale(1.1); opacity: 0.8; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .bubble-text {
+          color: white;
+          flex: 1;
+        }
+        
+        .bubble-title {
+          font-weight: 600;
+          font-size: 16px;
+          margin-bottom: 2px;
+        }
+        
+        .bubble-subtitle {
+          font-size: 13px;
+          opacity: 0.9;
+        }
+        
+        @media (max-width: 480px) {
+          #playstation-chat-bubble {
+            width: 240px !important;
+            height: 70px !important;
+            padding: 0 15px !important;
+          }
+          
+          .ps-logo {
+            width: 40px !important;
+            height: 40px !important;
+            font-size: 14px !important;
+          }
+          
+          .bubble-title {
+            font-size: 14px !important;
+          }
+          
+          .bubble-subtitle {
+            font-size: 12px !important;
+          }
+        }
+        
+        .chat-widget-container {
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          width: 384px;
+          height: 600px;
+          border-radius: 16px;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+          z-index: ${this.config.zIndex + 1};
+          background: white;
+          transform: translateY(100%) scale(0.8);
+          opacity: 0;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .chat-widget-container.open {
+          transform: translateY(0) scale(1);
+          opacity: 1;
+        }
+        
+        .chat-widget-container iframe {
+          width: 100%;
+          height: 100%;
+          border: none;
+          border-radius: 16px;
+        }
+        
+        @media (max-width: 480px) {
+          .chat-widget-container {
+            width: calc(100vw - 20px) !important;
+            height: calc(100vh - 40px) !important;
+            bottom: 10px !important;
+            right: 10px !important;
+            left: 10px !important;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    
+    openChat() {
+      // Hide bubble
+      this.bubbleContainer.style.display = 'none';
+      
+      // Create chat iframe if it doesn't exist
+      if (!this.container) {
+        this.createChatWidget();
+      } else {
+        // Show existing chat
+        this.container.classList.add('open');
+      }
+      
+      this.isMinimized = false;
+      this.sendAnalytics('chat_opened');
+    }
+    
+    createChatWidget() {
       // Create container
       this.container = document.createElement('div');
-      this.container.id = 'playstation-chat-widget-container';
-      this.container.style.cssText = this.getContainerStyles();
+      this.container.className = 'chat-widget-container';
       
       // Create iframe
       this.iframe = document.createElement('iframe');
       this.iframe.src = this.getIframeUrl();
-      this.iframe.style.cssText = this.getIframeStyles();
-      this.iframe.frameBorder = '0';
       this.iframe.allow = 'microphone';
       
       // Add loading state
@@ -70,7 +279,7 @@
           display: flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+          background: linear-gradient(135deg, #0066cc, #004499);
           border-radius: 16px;
           color: white;
           font-family: system-ui, -apple-system, sans-serif;
@@ -114,47 +323,10 @@
       
       document.body.appendChild(this.container);
       
-      // Add CSS animations
-      this.addStylesheet();
-    }
-    
-    getContainerStyles() {
-      const position = this.config.position || 'bottom-right';
-      const size = this.config.size || 'medium';
-      
-      const sizes = {
-        small: { width: '320px', height: '500px' },
-        medium: { width: '384px', height: '600px' },
-        large: { width: '448px', height: '700px' }
-      };
-      
-      const positions = {
-        'bottom-right': 'bottom: 16px; right: 16px;',
-        'bottom-left': 'bottom: 16px; left: 16px;',
-        'top-right': 'top: 16px; right: 16px;',
-        'top-left': 'top: 16px; left: 16px;'
-      };
-      
-      return `
-        position: fixed;
-        ${positions[position]}
-        width: ${sizes[size].width};
-        height: ${sizes[size].height};
-        z-index: ${this.config.zIndex};
-        border-radius: 16px;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      `;
-    }
-    
-    getIframeStyles() {
-      return `
-        width: 100%;
-        height: 100%;
-        border-radius: 16px;
-        background: white;
-        transition: opacity 0.3s ease;
-      `;
+      // Trigger open animation
+      setTimeout(() => {
+        this.container.classList.add('open');
+      }, 100);
     }
     
     getIframeUrl() {
@@ -177,31 +349,24 @@
         case 'playstation-chat-minimize':
           this.minimize();
           break;
-        case 'playstation-chat-resize':
-          this.resize(data.width, data.height);
+        case 'playstation-chat-close':
+          this.close();
           break;
       }
     }
     
     minimize() {
       if (this.container) {
-        this.container.style.transform = 'scale(0.8)';
-        this.container.style.opacity = '0.9';
+        this.container.classList.remove('open');
+        setTimeout(() => {
+          this.bubbleContainer.style.display = 'flex';
+        }, 400);
       }
+      this.isMinimized = true;
     }
     
-    maximize() {
-      if (this.container) {
-        this.container.style.transform = 'scale(1)';
-        this.container.style.opacity = '1';
-      }
-    }
-    
-    resize(width, height) {
-      if (this.container) {
-        this.container.style.width = width + 'px';
-        this.container.style.height = height + 'px';
-      }
+    close() {
+      this.minimize();
     }
     
     sendAnalytics(event, data = {}) {
@@ -221,57 +386,32 @@
       }).catch(() => {}); // Silently fail
     }
     
-    addStylesheet() {
-      const style = document.createElement('style');
-      style.textContent = `
-        #playstation-chat-widget-container {
-          font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-        
-        #playstation-chat-widget-container:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 32px 64px -12px rgba(0, 0, 0, 0.35);
-        }
-        
-        @media (max-width: 480px) {
-          #playstation-chat-widget-container {
-            width: calc(100vw - 32px) !important;
-            height: calc(100vh - 32px) !important;
-            max-width: 384px;
-            max-height: 600px;
-          }
-        }
-      `;
-      document.head.appendChild(style);
-    }
-    
     // Public methods
     show() {
-      if (this.container) {
-        this.container.style.display = 'block';
+      if (this.bubbleContainer) {
+        this.bubbleContainer.style.display = 'flex';
       }
     }
     
     hide() {
+      if (this.bubbleContainer) {
+        this.bubbleContainer.style.display = 'none';
+      }
       if (this.container) {
-        this.container.style.display = 'none';
+        this.container.classList.remove('open');
       }
     }
     
     destroy() {
+      if (this.bubbleContainer) {
+        this.bubbleContainer.remove();
+      }
       if (this.container) {
         this.container.remove();
-        this.container = null;
-        this.iframe = null;
       }
-    }
-    
-    updateConfig(newConfig) {
-      this.config = { ...this.config, ...newConfig };
-      // Reload iframe with new config
-      if (this.iframe) {
-        this.iframe.src = this.getIframeUrl();
-      }
+      this.bubbleContainer = null;
+      this.container = null;
+      this.iframe = null;
     }
   }
   
@@ -287,5 +427,12 @@
   window.initPlayStationChat = function(config) {
     return new PlayStationChatWidget(config);
   };
+  
+  // Auto-initialize with default config if no config provided
+  setTimeout(() => {
+    if (!window.PlayStationChatWidget.instance) {
+      window.PlayStationChatWidget.instance = new PlayStationChatWidget();
+    }
+  }, 1000);
   
 })();
