@@ -38,6 +38,31 @@ function WidgetContent() {
   const userMessages = messages.filter(msg => msg.role === 'user')
   const hasUserMessages = userMessages.length > 0
 
+  // Remove X-Frame-Options restrictions for iframe embedding
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const removeFrameRestrictions = () => {
+        // Remove any existing X-Frame-Options restrictions
+        const meta = document.createElement('meta');
+        meta.httpEquiv = 'X-Frame-Options';
+        meta.content = 'ALLOWALL';
+        document.head.appendChild(meta);
+        
+        // Also add CSP meta for frame-ancestors
+        const cspMeta = document.createElement('meta');
+        cspMeta.httpEquiv = 'Content-Security-Policy';
+        cspMeta.content = 'frame-ancestors *';
+        document.head.appendChild(cspMeta);
+      };
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', removeFrameRestrictions);
+      } else {
+        removeFrameRestrictions();
+      }
+    }
+  }, []);
+
   // Parse config from URL params
   useEffect(() => {
     const configParam = searchParams.get('config')
