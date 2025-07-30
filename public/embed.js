@@ -7,13 +7,14 @@
     return;
   }
   
+  console.log('PlayStation Chat Widget loading...');
+  
   // Default configuration
   const defaultConfig = {
-    apiEndpoint: null, // Will use the host's API
     theme: {
-      primaryColor: '#3b82f6',
-      secondaryColor: '#8b5cf6',
-      accentColor: '#ec4899',
+      primaryColor: '#0066cc',
+      secondaryColor: '#004499',
+      accentColor: '#ff6b35',
       companyName: 'PlayStation Support'
     },
     position: 'bottom-right',
@@ -32,8 +33,10 @@
       this.isLoaded = false;
       this.iframe = null;
       this.container = null;
+      this.bubbleContainer = null;
       this.isMinimized = true; // Start minimized as a bubble
       
+      console.log('PlayStation Chat Widget initialized with config:', this.config);
       this.init();
     }
     
@@ -50,6 +53,7 @@
     }
     
     createWidget() {
+      console.log('Creating PlayStation chat bubble...');
       // Create floating bubble first
       this.createBubble();
     }
@@ -62,29 +66,35 @@
       
       // Bubble content
       this.bubbleContainer.innerHTML = `
-        <div class="bubble-icon">
-          <div class="ps-logo">PS</div>
-          <div class="notification-dot"></div>
-        </div>
-        <div class="bubble-text">
-          <div class="bubble-title">PlayStation Support</div>
-          <div class="bubble-subtitle">Need help? Click to chat!</div>
+        <div class="bubble-content">
+          <div class="bubble-icon">
+            <div class="ps-logo">PS</div>
+            <div class="notification-dot"></div>
+          </div>
+          <div class="bubble-text">
+            <div class="bubble-title">PlayStation Support</div>
+            <div class="bubble-subtitle">Need help? Click to chat!</div>
+          </div>
         </div>
       `;
       
       // Add click handler to open chat
-      this.bubbleContainer.addEventListener('click', () => this.openChat());
+      this.bubbleContainer.addEventListener('click', () => {
+        console.log('Chat bubble clicked, opening chat...');
+        this.openChat();
+      });
       
       document.body.appendChild(this.bubbleContainer);
       
       // Add bubble styles
       this.addBubbleStyles();
       
-      // Animate bubble in
+      // Animate bubble in after a short delay
       setTimeout(() => {
         this.bubbleContainer.style.transform = 'translateY(0) scale(1)';
         this.bubbleContainer.style.opacity = '1';
-      }, 500);
+        console.log('PlayStation chat bubble displayed');
+      }, 1000);
     }
     
     getBubbleStyles() {
@@ -107,10 +117,6 @@
         box-shadow: 0 8px 32px rgba(0, 102, 204, 0.3);
         cursor: pointer;
         z-index: ${this.config.zIndex};
-        display: flex;
-        align-items: center;
-        padding: 0 20px;
-        gap: 15px;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         transform: translateY(100px) scale(0.8);
         opacity: 0;
@@ -124,9 +130,22 @@
       const style = document.createElement('style');
       style.id = 'ps-bubble-styles';
       style.textContent = `
+        #playstation-chat-bubble {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
         #playstation-chat-bubble:hover {
           transform: translateY(-5px) scale(1.02) !important;
           box-shadow: 0 12px 40px rgba(0, 102, 204, 0.4) !important;
+        }
+        
+        .bubble-content {
+          display: flex;
+          align-items: center;
+          padding: 0 20px;
+          gap: 15px;
+          width: 100%;
+          height: 100%;
         }
         
         .bubble-icon {
@@ -186,6 +205,9 @@
           #playstation-chat-bubble {
             width: 240px !important;
             height: 70px !important;
+          }
+          
+          .bubble-content {
             padding: 0 15px !important;
           }
           
@@ -246,7 +268,9 @@
     
     openChat() {
       // Hide bubble
-      this.bubbleContainer.style.display = 'none';
+      if (this.bubbleContainer) {
+        this.bubbleContainer.style.display = 'none';
+      }
       
       // Create chat iframe if it doesn't exist
       if (!this.container) {
@@ -261,6 +285,8 @@
     }
     
     createChatWidget() {
+      console.log('Creating chat widget iframe...');
+      
       // Create container
       this.container = document.createElement('div');
       this.container.className = 'chat-widget-container';
@@ -313,12 +339,48 @@
       
       // Show iframe when loaded
       this.iframe.onload = () => {
+        console.log('Chat widget iframe loaded');
         setTimeout(() => {
           loader.style.display = 'none';
           this.iframe.style.opacity = '1';
           this.isLoaded = true;
           this.sendAnalytics('widget_loaded');
         }, 500);
+      };
+      
+      // Handle iframe load errors
+      this.iframe.onerror = () => {
+        console.error('Failed to load chat widget iframe');
+        loader.innerHTML = `
+          <div style="
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #ff4444;
+            border-radius: 16px;
+            color: white;
+            font-family: system-ui, -apple-system, sans-serif;
+            text-align: center;
+            padding: 20px;
+          ">
+            <div>
+              <div style="font-size: 18px; margin-bottom: 10px;">⚠️</div>
+              <div style="font-size: 14px;">Failed to load chat widget</div>
+              <button onclick="window.open('${this.config.hostUrl}/widget', '_blank')" style="
+                margin-top: 15px;
+                padding: 10px 20px;
+                background: white;
+                color: #ff4444;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: 600;
+              ">Open in new window</button>
+            </div>
+          </div>
+        `;
       };
       
       document.body.appendChild(this.container);
@@ -359,7 +421,9 @@
       if (this.container) {
         this.container.classList.remove('open');
         setTimeout(() => {
-          this.bubbleContainer.style.display = 'flex';
+          if (this.bubbleContainer) {
+            this.bubbleContainer.style.display = 'block';
+          }
         }, 400);
       }
       this.isMinimized = true;
@@ -389,7 +453,7 @@
     // Public methods
     show() {
       if (this.bubbleContainer) {
-        this.bubbleContainer.style.display = 'flex';
+        this.bubbleContainer.style.display = 'block';
       }
     }
     
@@ -420,19 +484,21 @@
   
   // Initialize if config is already available
   if (window.PlayStationChatConfig) {
+    console.log('Initializing with existing config...');
     new PlayStationChatWidget(window.PlayStationChatConfig);
+  } else {
+    // Auto-initialize with default config after a delay
+    setTimeout(() => {
+      if (!window.PlayStationChatWidget.instance) {
+        console.log('Auto-initializing with default config...');
+        window.PlayStationChatWidget.instance = new PlayStationChatWidget();
+      }
+    }, 1000);
   }
   
   // Create convenience method for manual initialization
   window.initPlayStationChat = function(config) {
     return new PlayStationChatWidget(config);
   };
-  
-  // Auto-initialize with default config if no config provided
-  setTimeout(() => {
-    if (!window.PlayStationChatWidget.instance) {
-      window.PlayStationChatWidget.instance = new PlayStationChatWidget();
-    }
-  }, 1000);
   
 })();
