@@ -259,8 +259,29 @@ function WidgetContent() {
     }
   }
 
-  // Minimized state for widget
-  if (isMinimized) {
+  // Handle minimize/close - send message to parent
+  const handleMinimize = () => {
+    if (window.parent !== window) {
+      window.parent.postMessage({
+        type: 'playstation-chat-minimize'
+      }, '*')
+    } else {
+      setIsMinimized(true)
+    }
+  }
+
+  const handleClose = () => {
+    if (window.parent !== window) {
+      window.parent.postMessage({
+        type: 'playstation-chat-close'
+      }, '*')
+    } else {
+      setIsMinimized(true)
+    }
+  }
+
+  // Minimized state for widget (when not in iframe)
+  if (isMinimized && window.parent === window) {
     return (
       <div className="fixed bottom-4 right-4 z-50">
         <motion.button
@@ -270,9 +291,6 @@ function WidgetContent() {
           whileTap={{ scale: 0.95 }}
           onClick={() => setIsMinimized(false)}
           className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 text-white px-5 py-3 rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 flex items-center gap-3 group border border-white border-opacity-20"
-          style={{
-            background: config.theme?.primaryColor ? `linear-gradient(45deg, ${config.theme.primaryColor}, ${config.theme.secondaryColor || config.theme.primaryColor})` : undefined
-          }}
         >
           <div className="relative">
             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center border-2 border-gray-200">
@@ -312,8 +330,8 @@ function WidgetContent() {
         ) : (
           <div key="chat" className="flex flex-col h-full">
             <WidgetHeader 
-              onMinimize={() => setIsMinimized(true)}
-              onClose={() => setIsMinimized(true)}
+              onMinimize={handleMinimize}
+              onClose={handleClose}
               onNewChat={createNewChat}
               onShowHistory={() => setShowHistory(true)}
               companyName={config.theme?.companyName || "PlayStation Support"}
