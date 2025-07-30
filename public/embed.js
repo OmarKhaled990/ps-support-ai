@@ -21,7 +21,7 @@
     size: 'medium',
     welcomeMessage: '🎮 Welcome to PlayStation Support! How can I help you today?',
     placeholder: 'Ask about your PlayStation issue...',
-    hostUrl: 'https://ps-support-1036s5mta-omar-khalafs-projects.vercel.app',
+    hostUrl: 'https://ps-support-ai.vercel.app/',
     enableAnalytics: true,
     zIndex: 9999
   };
