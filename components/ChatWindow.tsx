@@ -32,7 +32,7 @@ export default function ChatWindow({ messages, isLoading }: ChatWindowProps) {
             PlayStation Support Assistant
           </h3>
           <p className="text-gray-600">
-            Hi! I'm here to help with your PS4 and PS5 questions. What can I assist you with today?
+            Hi! I&apos;m here to help with your PS4 and PS5 questions. What can I assist you with today?
           </p>
         </div>
       ) : (

@@ -148,7 +148,7 @@ function WidgetContent() {
       const reader = response.body?.getReader()
       const decoder = new TextDecoder()
 
-      let assistantMessage: Message = {
+      const assistantMessage: Message = {
         id: uuidv4(),
         role: 'assistant',
         content: '',
